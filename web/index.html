@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IA Générateur de Code Python (CPU)</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.11.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/onnxjs@1.14.0/dist/onnx.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2980b9;
+            --background-color: #f8f9fa;
+            --text-color: #333;
+            --light-gray: #e0e0e0;
+            --white: #ffffff;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: var(--text-color);
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+
+        .container {
+            background-color: var(--white);
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        textarea {
+            width: 100%;
+            height: 120px;
+            padding: 12px;
+            border: 1px solid var(--light-gray);
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            resize: vertical;
+            box-sizing: border-box;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+        }
+
+        button {
+            display: block;
+            width: 100%;
+            padding: 12px 20px;
+            background-color: var(--primary-color);
+            color: var(--white);
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.2s;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background-color: var(--secondary-color);
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        button:disabled {
+            background-color: #95a5a6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        #status {
+            margin-top: 15px;
+            text-align: center;
+            color: #7f8c8d;
+            font-style: italic;
+            min-height: 20px;
+        }
+
+        #result {
+            margin-top: 25px;
+            padding: 15px;
+            background-color: #f0f0f0;
+            border-radius: 5px;
+            border: 1px solid var(--light-gray);
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            min-height: 100px;
+            overflow-x: auto;
+        }
+
+        .examples {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #e8f8fc;
+            border-radius: 5px;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .examples h3 {
+            margin-top: 0;
+            color: var(--primary-color);
+            font-size: 1em;
+        }
+
+        .examples ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+
+        .examples li {
+            margin-bottom: 5px;
+            color: var(--text-color);
+        }
+
+        .examples .example-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .examples .example-buttons button {
+            width: auto;
+            display: inline-block;
+            padding: 8px 15px;
+            font-size: 14px;
+        }
+
+        .agent-info {
+            margin-top: 15px;
+            padding: 12px;
+            background-color: #e8f8fc;
+            border-radius: 5px;
+            display: none;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .agent-info.show {
+            display: block;
+        }
+
+        .agent-info strong {
+            color: var(--primary-color);
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            .container {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 IA Générateur de Code Python</h1>
+        <p class="subtitle">Entrez une description en français, et l'IA générera du code Python pour vous.</p>
+
+        <div class="examples">
+            <h3>Exemples de requêtes :</h3>
+            <ul>
+                <li>Écris une fonction pour calculer la factorielle d'un nombre.</li>
+                <li>Génère un script Python pour lire un fichier CSV et afficher son contenu.</li>
+                <li>Crée une classe pour gérer une liste de tâches (ajout, suppression, affichage).</li>
+            </ul>
+            <div class="example-buttons">
+                <button id="loadExample1">Exemple 1</button>
+                <button id="loadExample2">Exemple 2</button>
+                <button id="loadExample3">Exemple 3</button>
+            </div>
+        </div>
+
+        <div class="input-group">
+            <label for="userQuery">Votre requête :</label>
+            <textarea id="userQuery" placeholder="Exemple : Écris une fonction pour additionner deux nombres..."></textarea>
+        </div>
+
+        <button id="submit" disabled>Générer du Code</button>
+        <div id="status">Chargement des modèles...</div>
+
+        <div class="agent-info" id="agentInfo">
+            <strong>Agent sélectionné :</strong> <span id="agentName">Générateur de Code</span>
+            <p id="agentDescription">Génère du code Python à partir d'une description en français.</p>
+        </div>
+
+        <h3>Résultat :</h3>
+        <div id="result">Le résultat s'affichera ici...</div>
+    </div>
+
+    <script>
+        // Variables globales
+        let modelLoaded = false;
+        const examples = [
+            "Écris une fonction pour calculer la factorielle d'un nombre.",
+            "Génère un script Python pour lire un fichier CSV et afficher son contenu.",
+            "Crée une classe pour gérer une liste de tâches (ajout, suppression, affichage)."
+        ];
+
+        // Charger les exemples
+        document.getElementById('loadExample1').addEventListener('click', () => {
+            document.getElementById('userQuery').value = examples[0];
+        });
+        document.getElementById('loadExample2').addEventListener('click', () => {
+            document.getElementById('userQuery').value = examples[1];
+        });
+        document.getElementById('loadExample3').addEventListener('click', () => {
+            document.getElementById('userQuery').value = examples[2];
+        });
+
+        // Simuler le chargement du modèle (pour le prototype)
+        async function loadModel() {
+            document.getElementById('status').textContent = "Chargement du modèle de test...";
+            await new Promise(resolve => setTimeout(resolve, 1500)); // Simuler un délai
+            modelLoaded = true;
+            document.getElementById('status').textContent = "Modèle chargé ! Prêt à générer du code.";
+            document.getElementById('submit').disabled = false;
+        }
+
+        // Générer du code (version prototype avec modèle dummy)
+        async function generateCode() {
+            const query = document.getElementById('userQuery').value.trim();
+            if (!query) {
+                alert("Veuillez entrer une requête.");
+                return;
+            }
+
+            document.getElementById('status').textContent = "Génération en cours...";
+            document.getElementById('result').textContent = "";
+
+            // Simuler un délai de génération
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            // Générer une réponse dummy (à remplacer par le vrai modèle plus tard)
+            const responses = {
+                "Écris une fonction pour calculer la factorielle d'un nombre.": `def factorielle(n):
+    if n == 0:
+        return 1
+    else:
+        return n * factorielle(n - 1)
+
+# Exemple d'utilisation:
+print(factorielle(5))  # Affiche 120`,
+                "Génère un script Python pour lire un fichier CSV et afficher son contenu.": `import csv
+
+def lire_csv(fichier):
+    with open(fichier, mode='r', encoding='utf-8') as f:
+        lecteur = csv.reader(f)
+        for ligne in lecteur:
+            print(ligne)
+
+# Exemple d'utilisation:
+lire_csv('données.csv')`,
+                "Crée une classe pour gérer une liste de tâches (ajout, suppression, affichage).": `class ListeTaches:
+    def __init__(self):
+        self.taches = []
+
+    def ajouter(self, tache):
+        self.taches.append(tache)
+        print(f"Tâche ajoutée : {tache}")
+
+    def supprimer(self, index):
+        if 0 <= index < len(self.taches):
+            tache = self.taches.pop(index)
+            print(f"Tâche supprimée : {tache}")
+        else:
+            print("Index invalide.")
+
+    def afficher(self):
+        if not self.taches:
+            print("Aucune tâche.")
+        else:
+            print("Liste des tâches :")
+            for i, tache in enumerate(self.taches):
+                print(f"{i + 1}. {tache}")
+
+# Exemple d'utilisation:
+ma_liste = ListeTaches()
+ma_liste.ajouter("Faire les courses")
+ma_liste.ajouter("Écrire du code")
+ma_liste.afficher()
+ma_liste.supprimer(0)
+ma_liste.afficher()`
+            };
+
+            // Vérifier si la requête correspond à un exemple
+            let response = responses[query];
+            if (!response) {
+                // Générer une réponse générique si la requête n'est pas reconnue
+                response = `def nouvelle_fonction():
+    # Code généré par l'IA pour : "${query}"
+    pass
+
+# À compléter selon vos besoins.`;
+            }
+
+            document.getElementById('result').textContent = response;
+            document.getElementById('status').textContent = "Code généré avec succès !";
+        }
+
+        // Initialisation
+        loadModel();
+        document.getElementById('submit').addEventListener('click', generateCode);
+    </script>
+</body>
+</html>
