@@ -1,0 +1,50 @@
+# Configuration pour le module OCR d'écriture manuscrite
+
+# Moteur OCR à utiliser
+# Options: "easyocr" (recommandé pour l'écriture manuscrite), "tesseract" (pour le texte imprimé)
+ocr_engine: "easyocr"
+
+# Langues supportées (codes ISO 639-1)
+# Exemples: "fr" (français), "en" (anglais), "es" (espagnol), "de" (allemand)
+languages: ["fr", "en"]
+
+# Paramètres de prétraitement d'image
+preprocessing:
+  # Appliquer un seuil adaptatif
+  adaptive_threshold: true
+  
+  # Taille du noyau pour la suppression du bruit
+  kernel_size: [2, 2]
+  
+  # Nombre d'itérations pour la morphologie
+  morph_iterations: 1
+
+# Paramètres de post-traitement
+post_processing:
+  # Langue principale pour la correction
+  language: "fr"
+  
+  # Activer la correction des erreurs OCR
+  correct_errors: true
+  
+  # Activer la structuration du texte
+  structure_text: true
+
+# Paramètres d'impression
+printing:
+  # Imprimante par défaut (None pour utiliser la valeur par défaut du système)
+  default_printer: null
+  
+  # Nombre de copies par défaut
+  default_copies: 1
+  
+  # Format de sortie par défaut ("txt" ou "pdf")
+  default_format: "txt"
+
+# Chemins
+paths:
+  # Dossier pour les images d'exemple
+  examples_dir: "examples"
+  
+  # Dossier pour les fichiers de sortie
+  output_dir: "output"

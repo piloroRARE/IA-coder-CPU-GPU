@@ -1,0 +1,29 @@
+# Dépendances pour le module OCR d'écriture manuscrite
+
+# OCR
+# EasyOCR est le moteur principal pour la reconnaissance d'écriture manuscrite
+easyocr>=1.7.0
+
+# Tesseract (alternative pour le texte imprimé)
+pytesseract>=0.3.10
+
+# Traitement d'images
+opencv-python>=4.8.0
+Pillow>=10.0.0
+numpy>=1.24.0
+
+# Interface web
+Flask>=3.0.0
+Werkzeug>=3.0.0
+
+# Génération de PDF
+fpdf>=1.7.2
+
+# Impression (optionnel, pour Linux)
+# pycups>=2.0.1
+
+# Configuration
+PyYAML>=6.0.1
+
+# Typage
+typing-extensions>=4.8.0
